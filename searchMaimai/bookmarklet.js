@@ -1,0 +1,1 @@
+javascript:(function(){var s=document.createElement('script');s.src=(location.protocol+'//'+location.host+location.pathname.replace(/[^/]+$/,'')+'searchMaimaiSystem.js');document.body.appendChild(s);})();
