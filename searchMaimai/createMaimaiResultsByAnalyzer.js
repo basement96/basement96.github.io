@@ -300,7 +300,7 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
     const rowData = [
       title,
       difficulty,
-      sheetType,
+      chartType,
       level,
       "",
       "",
