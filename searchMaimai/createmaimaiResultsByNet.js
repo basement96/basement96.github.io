@@ -1,0 +1,4 @@
+javascript: 
+(function createMaimaiResultsByNet(htmlText) {
+    
+})();

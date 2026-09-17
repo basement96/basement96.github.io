@@ -1,0 +1,1 @@
+javascript:(function(){var s=document.createElement('script');s.src='https://basement96.github.io/searchMaimai/searchMaimaiSystem.js';document.body.appendChild(s);})();

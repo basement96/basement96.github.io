@@ -9,14 +9,18 @@ function searchMaimaiByAnalyzer() {
   const outerHtml = dataField.outerHTML;
   console.log(outerHtml);
 
-  navigator.clipboard.writeText(outerHtml)
+  loadFunction('searchMaimaiAnalyzer.js', 'createMaimaiResultsByAnalyzer', [outerHtml]);
+
+  
+
+  /*navigator.clipboard.writeText(outerHtml)
     .then(() => {
       alert('クリップボードにコピーしました。');
     })
     .catch((error) => {
       alert('クリップボードへのコピーに失敗しました。\nエラー理由: ' + error);
       console.error('クリップボードへのコピーに失敗しました:', error);
-    });
+    });*/
 }
 
 function searchMaimaiByNet() {
@@ -38,14 +42,16 @@ function searchMaimaiByNet() {
     }
   }
 
-  navigator.clipboard.writeText(htmlText)
+  createMaimaiResultsByNet(htmlText);
+
+  /*navigator.clipboard.writeText(htmlText)
     .then(() => {
       alert('クリップボードにコピーしました。');
     })
     .catch((error) => {
       alert('クリップボードへのコピーに失敗しました。\nエラー理由: ' + error);
       console.error('クリップボードへのコピーに失敗しました:', error);
-    });
+    });*/
 }
 
 function showSearchMethodSelection() {
@@ -106,6 +112,28 @@ function showSearchMethodSelection() {
   } else {
     document.documentElement.appendChild(dialog);
   }
+}
+
+
+// スクリプトをオンデマンドで読み込んで実行する関数
+function loadFunction(fileName, fnName, arg=[]) {
+  // 既に読み込み済みならスクリプトタグを追加せず直接実行
+  if (typeof window[fnName] === 'function') {
+    window[fnName](...arg);
+    return;
+  }
+
+  const script = document.createElement('script');
+  script.src = fileName;
+  script.onload = () => {
+    if (typeof window[fnName] === 'function') {
+      window[fnName](...arg);
+    } else {
+      console.error(`${fnName} が定義されていません`);
+    }
+  };
+  script.onerror = () => console.error(`${fileName} の読み込みに失敗しました`);
+  document.head.appendChild(script);
 }
 
 showSearchMethodSelection();
