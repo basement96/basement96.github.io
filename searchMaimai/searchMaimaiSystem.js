@@ -8,8 +8,8 @@ function searchMaimaiByAnalyzer() {
 
   const outerHtml = dataField.outerHTML;
   console.log(outerHtml);
-  alert('searchmaimaianalyzerを実行します');
-  loadFunction('searchMaimaiAnalyzer.js', 'createMaimaiResultsByAnalyzer', [outerHtml]);
+
+  loadFunction('createMaimaiResultsByAnalyzer.js', 'createMaimaiResultsByAnalyzer', [outerHtml, 'isPlayed', 'value']);
 
   
 
@@ -87,7 +87,7 @@ function showSearchMethodSelection() {
   buttonRow.style.gap = '8px';
 
   const buttonA = document.createElement('button');
-  buttonA.textContent = 'あならいざもどき2使用時？？？？';
+  buttonA.textContent = 'あならいざもどき2使用時';
   buttonA.style.padding = '6px 14px';
   buttonA.addEventListener('click', () => {
     dialog.remove();
