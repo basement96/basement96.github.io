@@ -8,7 +8,7 @@ function searchMaimaiByAnalyzer() {
 
   const outerHtml = dataField.outerHTML;
   console.log(outerHtml);
-
+  alert('searchmaimaianalyzerを実行します');
   loadFunction('searchMaimaiAnalyzer.js', 'createMaimaiResultsByAnalyzer', [outerHtml]);
 
   
