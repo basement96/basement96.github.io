@@ -124,7 +124,7 @@ function loadFunction(fileName, fnName, arg=[]) {
   }
 
   const script = document.createElement('script');
-  script.src = fileName;
+  script.src = 'https://basement96.github.io/searchMaimai/' + fileName;
   script.onload = () => {
     if (typeof window[fnName] === 'function') {
       window[fnName](...arg);
