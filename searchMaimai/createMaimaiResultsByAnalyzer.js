@@ -133,10 +133,27 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
     }
 
     // タイトルを取り出す関数
-    function parseTitle(container) {
+    /*function parseTitle(container) {
       const titleEl = container.querySelector(".music_title_dx, .music_title_standard, .music_title");
       return titleEl ? titleEl.innerText.trim() : "";
+    }*/
+    function parseTitle(container) {
+  const titleEl = container.querySelector(
+    ".music_title_dx, .music_title_standard, .music_title"
+  );
+
+  console.log(
+    "TITLE DEBUG:",
+    {
+      found: !!titleEl,
+      innerText: titleEl ? titleEl.innerText : null,
+      textContent: titleEl ? titleEl.textContent : null,
+      html: titleEl ? titleEl.outerHTML : null
     }
+  );
+
+  return titleEl ? titleEl.textContent.trim() : "";
+}
 
     // value用 獲得スコアを取り出す関数
     function vl_parseScore(rawScore) {
