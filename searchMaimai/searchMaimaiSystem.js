@@ -139,6 +139,55 @@ function searchMaimaiByAnalyzer() {
 }
 
 
+function showAnalyzerArgumentSelection(messageText, options, callback) {
+  const existingDialog = document.getElementById('searchMaimaiArgumentSelector');
+  if (existingDialog) {
+    existingDialog.remove();
+  }
+
+  const dialog = document.createElement('div');
+  dialog.id = 'searchMaimaiArgumentSelector';
+  dialog.style.position = 'fixed';
+  dialog.style.top = '20px';
+  dialog.style.left = '50%';
+  dialog.style.transform = 'translateX(-50%)';
+  dialog.style.zIndex = '999999';
+  dialog.style.background = '#fff';
+  dialog.style.border = '1px solid #ccc';
+  dialog.style.borderRadius = '8px';
+  dialog.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+  dialog.style.padding = '12px 16px';
+  dialog.style.fontFamily = 'sans-serif';
+  dialog.style.fontSize = '14px';
+  dialog.style.color = '#222';
+
+  const message = document.createElement('div');
+  message.textContent = messageText;
+  message.style.marginBottom = '10px';
+  message.style.textAlign = 'center';
+  dialog.appendChild(message);
+
+  const buttonRow = document.createElement('div');
+  buttonRow.style.display = 'flex';
+  buttonRow.style.justifyContent = 'center';
+  buttonRow.style.gap = '8px';
+
+  options.forEach((option) => {
+    const button = document.createElement('button');
+    button.textContent = option;
+    button.style.padding = '6px 14px';
+    button.addEventListener('click', () => {
+      dialog.remove();
+      callback(option);
+    });
+    buttonRow.appendChild(button);
+  });
+
+  dialog.appendChild(buttonRow);
+  (document.body || document.documentElement).appendChild(dialog);
+}
+
+
 function searchMaimaiByNet() {
   const targetElements = Array.from(document.querySelectorAll('[class*="w_450 m_15 p_r f_0"]'));
   let htmlText = '';
