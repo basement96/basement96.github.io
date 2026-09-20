@@ -225,6 +225,8 @@ function searchMaimaiByNet() {
 
 // スクリプトをオンデマンドで読み込んで実行する関数
 function loadFunction(fileName, fnName, arg=[]) {
+
+  console.log(`loadFunction: ${fileName}, ${fnName}, ${arg}`);
   // 既に読み込み済みならスクリプトタグを追加せず直接実行
   if (typeof window[fnName] === 'function') {
     window[fnName](...arg);
