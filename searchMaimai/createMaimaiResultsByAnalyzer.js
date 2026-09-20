@@ -55,130 +55,109 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
   */
   // 変換用関数群
 
-    // 難易度表記の変換マッピング
-    const diffMap = {
-      basic: "BAS",
-      advanced: "ADV",
-      expert: "EXP",
-      master: "MAS",
-      remaster: "Re:MAS"
-    };
+  // 難易度表記の変換マッピング
+  const diffMap = {
+    basic: "BAS",
+    advanced: "ADV",
+    expert: "EXP",
+    master: "MAS",
+    remaster: "Re:MAS"
+  };
 
-    // 譜面種表記の変換マッピング
-    const typeMap = {
-      standard: "SD",
-      dx: "DX"
-    };
+  // 譜面種表記の変換マッピング
+  const typeMap = {
+    standard: "SD",
+    dx: "DX"
+  };
 
-    // AP/FC表記の変換マッピング
-    const vl_apfcMap = {
-      "0": "×",
-      "1": "FC",
-      "2": "FC+",
-      "3": "AP",
-      "4": "AP+"
-    };
+  // AP/FC表記の変換マッピング
+  const vl_apfcMap = {
+    "0": "×",
+    "1": "FC",
+    "2": "FC+",
+    "3": "AP",
+    "4": "AP+"
+  };
 
-    // ランク表記の変換マッピング
-    const vl_rankMap = {
-      "E": "SSS+",
-      "D": "SSS",
-      "C": "SS+", 
-      "B": "SS",
-      "A": "S+",
-      "9": "S",
-      "8": "AAA",
-      "7": "AA",
-      "6": "A",
-      "5": "BBB",
-      "4": "BB",
-      "3": "B",
-      "2": "C",
-      "1": "D"
-    };
+  // ランク表記の変換マッピング
+  const vl_rankMap = {
+    "E": "SSS+",
+    "D": "SSS",
+    "C": "SS+",
+    "B": "SS",
+    "A": "S+",
+    "9": "S",
+    "8": "AAA",
+    "7": "AA",
+    "6": "A",
+    "5": "BBB",
+    "4": "BB",
+    "3": "B",
+    "2": "C",
+    "1": "D"
+  };
 
-    // AP / FC 画像URLから表記への変換関数
-    function sp_parseApFc(container) {
-      // コンテナ内の全img要素を取得
-      const imgs = container.querySelectorAll("img");
-      for (const img of imgs) {
-        const src = img.src || "";
-        if (src.includes("music_icon_app.png")) return "AP+";
-        if (src.includes("music_icon_ap.png")) return "AP";
-        if (src.includes("music_icon_fcp.png")) return "FC+";
-        if (src.includes("music_icon_fc.png")) return "FC";
-      }
-      return "×"; // 該当なし（back.png等）
+  // AP / FC 画像URLから表記への変換関数
+  function sp_parseApFc(container) {
+    // コンテナ内の全img要素を取得
+    const imgs = container.querySelectorAll("img");
+    for (const img of imgs) {
+      const src = img.src || "";
+      if (src.includes("music_icon_app.png")) return "AP+";
+      if (src.includes("music_icon_ap.png")) return "AP";
+      if (src.includes("music_icon_fcp.png")) return "FC+";
+      if (src.includes("music_icon_fc.png")) return "FC";
     }
+    return "×"; // 該当なし（back.png等）
+  }
 
-    // DXスコア（★）文字列からDS（★のあとの数値の小数点切り捨て）を取り出す関数
-    function sp_parseDS(container) {
-      const dxscRatioEl = container.querySelector(".dxscratio2");
-      if (!dxscRatioEl) return "";
-    
-      const text = dxscRatioEl.innerText; // 例: "93.36%☆3.18"
-      const starMatch = text.match(/☆([\d.]+)/);
-      if (starMatch && starMatch[1]) {
-        return Math.floor(parseFloat(starMatch[1])).toString(); // 3.18 -> "3"
-      }
-      return "";
+  // DXスコア（★）文字列からDS（★のあとの数値の小数点切り捨て）を取り出す関数
+  function sp_parseDS(container) {
+    const dxscRatioEl = container.querySelector(".dxscratio2");
+    if (!dxscRatioEl) return "";
+
+    const text = dxscRatioEl.textContent; // 例: "93.36%☆3.18"
+    const starMatch = text.match(/☆([\d.]+)/);
+    if (starMatch && starMatch[1]) {
+      return Math.floor(parseFloat(starMatch[1])).toString(); // 3.18 -> "3"
     }
+    return "";
+  }
 
-    // 獲得スコアを取り出す関数
-    function sp_parseScore(container) {
-      const achiEl = container.querySelector(".achi2, .music_score_block");
-      if (!achiEl) return "";
-      const scoreSpan = achiEl.querySelector(".f_r");
-      return scoreSpan ? scoreSpan.innerText.trim() : "";
-    }
+  // 獲得スコアを取り出す関数
+  function sp_parseScore(container) {
+    const achiEl = container.querySelector(".achi2, .music_score_block");
+    if (!achiEl) return "";
+    const scoreSpan = achiEl.querySelector(".f_r");
+    return scoreSpan ? scoreSpan.textContent.trim() : "";
+  }
 
-    // タイトルを取り出す関数
-    /*function parseTitle(container) {
-      const titleEl = container.querySelector(".music_title_dx, .music_title_standard, .music_title");
-      return titleEl ? titleEl.innerText.trim() : "";
-    }*/
-    function parseTitle(container) {
-  const titleEl = container.querySelector(
-    ".music_title_dx, .music_title_standard, .music_title"
-  );
+  // タイトルを取り出す関数
+  function parseTitle(container) {
+    const titleEl = container.querySelector(".music_title_dx, .music_title_standard, .music_title");
+    return titleEl ? titleEl.textContent.trim() : "";
+  }
 
-  console.log(
-    "TITLE DEBUG:",
-    {
-      found: !!titleEl,
-      innerText: titleEl ? titleEl.innerText : null,
-      textContent: titleEl ? titleEl.textContent : null,
-      html: titleEl ? titleEl.outerHTML : null
-    }
-  );
+  // value用 獲得スコアを取り出す関数
+  function vl_parseScore(rawScore) {
+    return rawScore ? (parseInt(rawScore, 16) / 10000).toFixed(4) : "";
+  }
 
-  return titleEl ? titleEl.textContent.trim() : "";
-}
+  // value用 でらっくスコアを取り出す関数
+  function vl_parseDxScore(rawDxScore) {
+    return rawDxScore ? parseInt(rawDxScore, 16) : "";
+  }
 
-    // value用 獲得スコアを取り出す関数
-    function vl_parseScore(rawScore) {
-      return rawScore ? (parseInt(rawScore, 16) / 10000).toFixed(4) : "";
-    }
+  // value用 でらっくスコア率を取り出す関数
+  function vl_parseDxRatio(rawDxRatio) {
+    return rawDxRatio ? (parseInt(rawDxRatio, 16) / 10000000).toFixed(4) : "";
+  }
 
-    // value用 でらっくスコアを取り出す関数
-    function vl_parseDxScore(rawDxScore) {
-      return rawDxScore ? parseInt(rawDxScore, 16) : "";
-    }
-
-    // value用 でらっくスコア率を取り出す関数
-    function vl_parseDxRatio(rawDxRatio) {
-      return rawDxRatio ? (parseInt(rawDxRatio, 16) / 10000000).toFixed(4) : "";
-    }
-
-
-
-
-  
 
   // 2. filTypeごとに楽曲データを抽出
-    // filType: "all" -> 全ての楽曲を抽出
-    // filType: "isPlayed" -> プレイ済みの楽曲のみ抽出
-  let scoreBlocks = document.querySelectorAll(".music_score_back");
+  // filType: "all" -> 全ての楽曲を抽出
+  // filType: "isPlayed" -> プレイ済みの楽曲のみ抽出
+  let scoreBlocks = outerHtml.querySelectorAll(".music_score_back");
   if (filType === "isPlayed") {
     scoreBlocks = Array.from(scoreBlocks).filter((block) => {
       const achiEl = block.querySelector(".achi2, .music_score_block");
@@ -208,91 +187,141 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
     let rank = "";
     let dxStar = "";
 
-    switch (anlType) {
+    function createBlock(analysisType = anlType) {
+      switch (analysisType) {
 
-      case "value": {
-        // valueの場合はclass内のvalue属性(parts)を使用
-        const valAttr = nameBlock ? nameBlock.getAttribute("value") : null;
-        if (!valAttr) {
-          console.warn("value属性が見つかりません:", block);
+        case "value": {
+          // valueの場合はclass内のvalue属性(parts)を使用
+          const rawValue = nameBlock ? nameBlock.getAttribute("value") : null;
+          if (!rawValue) {
+            console.warn("value属性が見つかりません:", block);
+          }
+          const parts = rawValue ? rawValue.split(",") : [];
+          const rawDiff = parts[1] || "";
+          const rawType = parts[2] || "";
+          const rawLevel = parts[3] || "";
+          const rawScore = parts[4] || "";
+          const rawDxScore = parts[5] || "";
+          const rawDxMaxScore = parts[6] || "";
+          const rawDxRatio = parts[7] || "";
+          const rawSync = parts[8] || "";
+          const rawApFc = parts[9] || "";
+          const rawRank = parts[10] || "";
+          const rawDxStar = parts[11] || "";
+
+          difficulty = diffMap[rawDiff.toLowerCase()] || rawDiff.toUpperCase();
+          chartType = typeMap[rawType.toLowerCase()] || rawType.toUpperCase();
+          level = rawLevel || "";
+          score = vl_parseScore(rawScore);
+          dxScore = vl_parseDxScore(rawDxScore);
+          dxMaxScore = vl_parseDxScore(rawDxMaxScore);
+          notes = vl_parseDxScore(rawDxMaxScore) / 3 || "";
+          dxRatio = vl_parseDxRatio(rawDxRatio);
+          sync = rawSync || "";
+          apfc = vl_apfcMap[rawApFc] || rawApFc;
+          rank = vl_rankMap[rawRank] || rawRank;
+          dxStar = rawDxStar || "";
+
+          break;
         }
-        const parts = valAttr ? valAttr.split(",") : [];
-        const rawDiff = parts[1] || "";
-        const rawType = parts[2] || "";
-        const rawLevel = parts[3] || "";
-        const rawScore = parts[4] || "";
-        const rawDxScore = parts[5] || "";
-        const rawDxMaxScore = parts[6] || "";
-        const rawDxRatio = parts[7] || "";
-        const rawSync = parts[8] || "";
-        const rawApFc = parts[9] || "";
-        const rawRank = parts[10] || "";
-        const rawDxStar = parts[11] || "";
 
-        difficulty = diffMap[rawDiff.toLowerCase()] || rawDiff.toUpperCase();
-        chartType = typeMap[rawType.toLowerCase()] || rawType.toUpperCase();
-        level = rawLevel || "";
-        score = vl_parseScore(rawScore);
-        dxScore = vl_parseDxScore(rawDxScore);
-        dxMaxScore = vl_parseDxScore(rawDxMaxScore);
-        notes = vl_parseDxScore(rawDxMaxScore) / 3 || "";
-        dxRatio = vl_parseDxRatio(rawDxRatio);
-        sync = rawSync || "";
-        apfc = vl_apfcMap[rawApFc] || rawApFc;
-        rank = vl_rankMap[rawRank] || rawRank;
-        dxStar = rawDxStar || "";
+        case "span": {
+          // spanの場合はvalue属性を使用しない（クラス名およびspan文章判定）
 
-        break;
+          let rawDiff = "master"; // デフォルト値
+          if (block.classList.contains("remaster")) rawDiff = "remaster";
+          else if (block.classList.contains("expert")) rawDiff = "expert";
+          else if (block.classList.contains("advanced")) rawDiff = "advanced";
+          else if (block.classList.contains("basic")) rawDiff = "basic";
+
+          const rawLevel = block.querySelector(".lv_block_new") || "";
+
+          let rawType = "dx"; // デフォルト値
+          if (block.querySelector(".music_title_back_standard")) rawType = "standard";
+
+          const rawScore = sp_parseScore(block);
+          const rawDxScore = block.querySelector(".dxsc2") ? block.querySelector(".dxsc2").textContent.split("/")[0] : "";
+          const rawDxMaxScore = block.querySelector(".dxsc2") ? block.querySelector(".dxsc2").textContent.split("/")[1] : "";
+          const rawDxRatio = block.querySelector(".dxscratio2") ? block.querySelector(".dxscratio2").textContent.split("☆")[0].replace("%", "") : "";
+          const rawSync = ""; // sync情報はspanからは取得できないため空文字
+          const rawApFc = sp_parseApFc(block);
+          const rawRank = block.querySelector(".lamprank") ? block.querySelector(".lamprank").className.split(" ")[1].replace("music_icon_", "").toUpperCase() : "";
+          const rawDxStar = block.querySelector(".dxscstar") ? block.querySelector(".dxscstar").className.split(" ")[1].replace("music_icon_dxstar_", "") : "";
+
+          difficulty = diffMap[rawDiff.toLowerCase()] || rawDiff.toUpperCase();
+          chartType = typeMap[rawType.toLowerCase()] || rawType.toUpperCase();
+          level = rawLevel ? rawLevel.textContent.trim() : "";
+          score = rawScore || "";
+          dxScore = rawDxScore || "";
+          dxMaxScore = rawDxMaxScore || "";
+          notes = rawDxMaxScore ? parseInt(rawDxMaxScore) / 3 : "";
+          dxRatio = rawDxRatio || "";
+          sync = rawSync || ""; // 空文字
+          apfc = rawApFc || "";
+          rank = rawRank.replace("p", "+") || ""; // "p"を"+"に置換
+          dxStar = rawDxStar || "";
+
+          break;
+        }
+
+        case "both": {
+          // bothの場合はvalue属性を使用しつつ、クラス名やspan文章も判定（一致しない場合は警告）
+          const valueResult = createBlock("value");
+          const spanResult = createBlock("span");
+          const fields = [
+            "difficulty", "chartType", "level", "score", "notes",
+            "dxScore", "dxMaxScore", "dxRatio", "sync", "apfc", "rank", "dxStar"
+          ];
+
+          fields.forEach((field) => {
+            if (valueResult[field] !== spanResult[field]) {
+              console.warn("valueとspanの解析結果が異なります:", {
+                field,
+                value: valueResult[field],
+                span: spanResult[field],
+                block
+              });
+            }
+          });
+
+          // 相違がある場合もspan側の値を優先する
+          return spanResult;
+        }
+        default:
+          console.warn("不明な解析タイプ:", anlType);
+
       }
 
-      case "span": {
-        // spanの場合はvalue属性を使用しない（クラス名およびspan文章判定）
-
-        let rawDiff = "master"; // デフォルト値
-        if (block.classList.contains("remaster")) rawDiff = "remaster";
-        else if (block.classList.contains("expert")) rawDiff = "expert";
-        else if (block.classList.contains("advanced")) rawDiff = "advanced";
-        else if (block.classList.contains("basic")) rawDiff = "basic";
-
-        const rawLevel = block.querySelector(".lv_block_new") || "";
-
-        let rawType = "dx"; // デフォルト値
-        if (block.querySelector(".music_title_back_standard")) rawType = "standard";
-
-        const rawScore = sp_parseScore(block);
-        const rawDxScore = block.querySelector(".dxsc2") ? block.querySelector(".dxsc2").innerText.split("/")[0] : "";
-        const rawDxMaxScore = block.querySelector(".dxsc2") ? block.querySelector(".dxsc2").innerText.split("/")[1] : "";
-        const rawDxRatio = block.querySelector(".dxscratio2") ? block.querySelector(".dxscratio2").innerText.split("☆")[0].replace("%", "") : "";
-        const rawSync = ""; // sync情報はspanからは取得できないため空文字
-        const rawApFc = sp_parseApFc(block);
-        const rawRank = block.querySelector(".lamprank") ? block.querySelector(".lamprank").className.split(" ")[1].replace("music_icon_", "").toUpperCase() : "";
-        const rawDxStar = block.querySelector(".dxscstar") ? block.querySelector(".dxscstar").className.split(" ")[1].replace("music_icon_dxstar_", "") : "";
-
-        difficulty = diffMap[rawDiff.toLowerCase()] || rawDiff.toUpperCase();
-        chartType = typeMap[rawType.toLowerCase()] || rawType.toUpperCase();
-        level = rawLevel ? rawLevel.innerText.trim() : "";
-        score = rawScore || "";
-        dxScore = rawDxScore || "";
-        dxMaxScore = rawDxMaxScore || "";
-        notes = rawDxMaxScore ? parseInt(rawDxMaxScore) / 3 : "";
-        dxRatio = rawDxRatio || "";
-        sync = rawSync || ""; // 空文字
-        apfc = rawApFc || "";
-        rank = rawRank.replace("p", "+") || ""; // "p"を"+"に置換
-        dxStar = rawDxStar || "";
-
-        break;
-      }
-
-      case "hybrid":
-        // hybridの場合はvalue属性を使用しつつ、クラス名やspan文章も判定（一致しない場合は警告）
-        // 後で作ります
-        break;
-
-      default:
-        console.warn("不明な解析タイプ:", anlType);
-    
+      return {
+        difficulty,
+        chartType,
+        level,
+        score,
+        notes,
+        dxScore,
+        dxMaxScore,
+        dxRatio,
+        sync,
+        apfc,
+        rank,
+        dxStar
+      };
     }
+
+    ({
+      difficulty,
+      chartType,
+      level,
+      score,
+      notes,
+      dxScore,
+      dxMaxScore,
+      dxRatio,
+      sync,
+      apfc,
+      rank,
+      dxStar
+    } = createBlock());
 
 
     // 1曲分のデータを配列表記にする

@@ -1,58 +1,5 @@
-function searchMaimaiByAnalyzer() {
-  const dataField = document.querySelector('#datafield');
+showSearchMethodSelection();
 
-  if (!dataField) {
-    alert('id="datafield" が見つかりませんでした。\nあならいざもどき2を実行したうえで、もう一度実行してください。');
-    return;
-  }
-
-  const outerHtml = dataField.outerHTML;
-  console.log(outerHtml);
-
-  loadFunction('createMaimaiResultsByAnalyzer.js', 'createMaimaiResultsByAnalyzer', [outerHtml, 'isPlayed', 'value']);
-
-  
-
-  /*navigator.clipboard.writeText(outerHtml)
-    .then(() => {
-      alert('クリップボードにコピーしました。');
-    })
-    .catch((error) => {
-      alert('クリップボードへのコピーに失敗しました。\nエラー理由: ' + error);
-      console.error('クリップボードへのコピーに失敗しました:', error);
-    });*/
-}
-
-function searchMaimaiByNet() {
-  const targetElements = Array.from(document.querySelectorAll('[class*="w_450 m_15 p_r f_0"]'));
-  let htmlText = '';
-
-  if (targetElements.length > 0) {
-    htmlText = targetElements.map((element) => element.outerHTML).join('\n');
-  } else {
-    const pageHtml = document.documentElement.outerHTML;
-    const startIndex = pageHtml.indexOf('POPS＆アニメ');
-    const footerIndex = pageHtml.indexOf('<footer', startIndex);
-
-    if (startIndex !== -1 && footerIndex !== -1) {
-      htmlText = pageHtml.slice(startIndex, footerIndex);
-    } else {
-      alert('対象の要素またはPOPS＆アニメの記述が見つかりませんでした。');
-      return;
-    }
-  }
-
-  createMaimaiResultsByNet(htmlText);
-
-  /*navigator.clipboard.writeText(htmlText)
-    .then(() => {
-      alert('クリップボードにコピーしました。');
-    })
-    .catch((error) => {
-      alert('クリップボードへのコピーに失敗しました。\nエラー理由: ' + error);
-      console.error('クリップボードへのコピーに失敗しました:', error);
-    });*/
-}
 
 function showSearchMethodSelection() {
   const existingDialog = document.getElementById('searchMaimaiMethodSelector');
@@ -115,6 +62,117 @@ function showSearchMethodSelection() {
 }
 
 
+function searchMaimaiByAnalyzer() {
+  const dataField = document.querySelector('#datafield');
+
+  if (!dataField) {
+    alert('id="datafield" が見つかりませんでした。\nあならいざもどき2を実行したうえで、もう一度実行してください。');
+    return;
+  }
+
+  const outerHtml = dataField.outerHTML;
+  console.log(outerHtml);
+
+  showAnalyzerArgumentSelection(
+    'プレイ済み判定に使用する属性を選択してください。',
+    ['isPlayed', 'all'],
+    (playedArgument) => {
+      showAnalyzerArgumentSelection(
+        '値の取得に使用する属性を選択してください。',
+        ['value', 'span', 'both'],
+        (valueArgument) => {
+          const dialog = document.createElement('div');
+          dialog.style.position = 'fixed';
+          dialog.style.top = '20px';
+          dialog.style.left = '50%';
+          dialog.style.transform = 'translateX(-50%)';
+          dialog.style.zIndex = '999999';
+          dialog.style.background = '#fff';
+          dialog.style.border = '1px solid #ccc';
+          dialog.style.borderRadius = '8px';
+          dialog.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.2)';
+          dialog.style.padding = '12px 16px';
+          dialog.style.fontFamily = 'sans-serif';
+          dialog.style.fontSize = '14px';
+          dialog.style.color = '#222';
+
+          const message = document.createElement('div');
+          message.textContent = '実行しますか？';
+          message.style.marginBottom = '10px';
+          message.style.textAlign = 'center';
+          dialog.appendChild(message);
+
+          ['実行', 'キャンセル'].forEach((label) => {
+            const button = document.createElement('button');
+            button.textContent = label;
+            button.style.margin = '0 4px';
+            button.style.padding = '6px 14px';
+            button.addEventListener('click', () => {
+              dialog.remove();
+              if (label === '実行') {
+                loadFunction('createMaimaiResultsByAnalyzer', 'createMaimaiResultsByAnalyzer', [
+                  outerHtml,
+                  playedArgument,
+                  valueArgument
+                ]);
+              }
+            });
+            dialog.appendChild(button);
+          });
+
+          (document.body || document.documentElement).appendChild(dialog);
+        }
+      );
+    }
+  );
+
+  
+
+  /*navigator.clipboard.writeText(outerHtml)
+    .then(() => {
+      alert('クリップボードにコピーしました。');
+    })
+    .catch((error) => {
+      alert('クリップボードへのコピーに失敗しました。\nエラー理由: ' + error);
+      console.error('クリップボードへのコピーに失敗しました:', error);
+    });*/
+}
+
+
+function searchMaimaiByNet() {
+  const targetElements = Array.from(document.querySelectorAll('[class*="w_450 m_15 p_r f_0"]'));
+  let htmlText = '';
+
+  if (targetElements.length > 0) {
+    htmlText = targetElements.map((element) => element.outerHTML).join('\n');
+  } else {
+    const pageHtml = document.documentElement.outerHTML;
+    const startIndex = pageHtml.indexOf('POPS＆アニメ');
+    const footerIndex = pageHtml.indexOf('<footer', startIndex);
+
+    if (startIndex !== -1 && footerIndex !== -1) {
+      htmlText = pageHtml.slice(startIndex, footerIndex);
+    } else {
+      alert('対象の要素またはPOPS＆アニメの記述が見つかりませんでした。');
+      return;
+    }
+  }
+
+  createMaimaiResultsByNet(htmlText);
+
+  /*navigator.clipboard.writeText(htmlText)
+    .then(() => {
+      alert('クリップボードにコピーしました。');
+    })
+    .catch((error) => {
+      alert('クリップボードへのコピーに失敗しました。\nエラー理由: ' + error);
+      console.error('クリップボードへのコピーに失敗しました:', error);
+    });*/
+}
+
+
+
+
 // スクリプトをオンデマンドで読み込んで実行する関数
 function loadFunction(fileName, fnName, arg=[]) {
   // 既に読み込み済みならスクリプトタグを追加せず直接実行
@@ -136,6 +194,5 @@ function loadFunction(fileName, fnName, arg=[]) {
   document.head.appendChild(script);
 }
 
-showSearchMethodSelection();
 
 
