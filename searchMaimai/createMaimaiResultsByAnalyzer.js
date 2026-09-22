@@ -101,7 +101,7 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
       doc.querySelectorAll(".music_score_back")
     );
 
-    if (filType === "isPlayed") {
+    if (filType === "isPlayed" || filType === "isDisplayed") {
       scoreBlocks = scoreBlocks.filter((block) => {
         const achiEl = block.querySelector(".achi2, .music_score_block");
         return achiEl && achiEl.querySelector(".f_r");
@@ -469,10 +469,10 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
       navigator.clipboard.writeText(resultTsv);
       let alertText = `${scoreBlocks.length}件の譜面データをクリップボードにコピーしました！\nExcelやGoogleスプレッドシートにそのまま貼り付けられます。`;
       if (warnSheets.length !== 0) {
-        alertText += `\n警告: いくつかの譜面データの情報が正確でない可能性があります。以下に示す譜面について、貼り付け後、攻略wiki等で情報を再確認してください。\n${warnSheets.join('\n')}`;
+        alertText += `\n\n警告: いくつかの譜面データの情報が正確でない可能性があります。以下に示す譜面について、貼り付け後、攻略wiki等で情報を再確認してください。\n${warnSheets.join('\n')}`;
       }
       console.log(`${funcName}: ${alertText} at ${Date.now()}`);
-      alert(`${alertText} (実行時間: ${Date.now() - startTime}ms)`);
+      alert(`${alertText}\n(実行時間: ${Date.now() - startTime}ms)`);
     } catch (err) {
       throw new Error(`クリップボードへのコピーに失敗しました。以下を確認の後、再度実行してください。\n・ブラウザのセキュリティ制限によるブロック\n・OSのクリップボードの容量を超過している\n・上記を確認しても改善しない場合、お手数ですが、使用OS、ブラウザを明記して制作者にご連絡ください。`)
     }

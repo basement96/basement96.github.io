@@ -1,5 +1,5 @@
 (() => {
-  const SCRIPT_VERSION = '0.1.0';
+  const SCRIPT_VERSION = '0.1.1';
 
   /**
    * ブックマークレット実行時に実行される非同期関数
@@ -218,10 +218,10 @@
 
     // script要素を作成
     const script = document.createElement('script');
-    const baseURL = 'https://basement96.github.io/searchMaimai/'
-    script.src = baseURL + fileName + '?v=' + SCRIPT_VERSION;
-    // const baseURL = 'http://localhost:8000/'; // 開発環境用
-    // script.src = baseURL + fileName + '?' + Date.now(); // 開発環境用
+    // const baseURL = 'https://basement96.github.io/searchMaimai/'
+    // script.src = baseURL + fileName + '?v=' + SCRIPT_VERSION;
+    const baseURL = 'http://localhost:8000/'; // 開発環境用
+    script.src = baseURL + fileName + '?' + Date.now(); // 開発環境用
 
     // 読み込み成功時
     script.onload = () => {

@@ -1,0 +1,1 @@
+javascript:(function(){const s=document.createElement('script');s.src='http://localhost:8000/searchMaimaiSystem.js?'+Date.now();document.body.appendChild(s);})();
