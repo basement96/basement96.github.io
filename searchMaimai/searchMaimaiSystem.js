@@ -1,5 +1,6 @@
 (() => {
-  const SCRIPT_VERSION = '0.1.1';
+  const SCRIPT_VERSION = '0.2.0';
+  const IS_DEVMODE = false;
 
   /**
    * ブックマークレット実行時に実行される非同期関数
@@ -9,7 +10,7 @@
     const selectedMethod = await switchDialog({
       dialogId: 'searchMaimaiMethodSelector_anlOrNet',
       dialogText: 'どちらを使用しますか？',
-      dialogNote: 'レコード→楽曲スコア→カテゴリと進み、楽曲ジャンルにて全ジャンルを指定してから、取得したい難易度を表示させた状態にしてください。\n「あならいざもどき2」を使用する場合は、\nあならいざもどき2を実行したうえで、\nこのスクリプトを実行してください。',
+      dialogNote: `レコード→楽曲スコア→カテゴリと進み、楽曲ジャンルにて全ジャンルを指定してから、取得したい難易度を表示させた状態にしてください。\n「あならいざもどき2」を使用する場合は、\nあならいざもどき2を実行したうえで、\nこのスクリプトを実行してください。\n\n(本スクリプトのバージョン: ${SCRIPT_VERSION})`,
       buttonLabels: ['あならいざもどき2\nモード', 'maimaiDXNet\nモード'],
       returnValues: ['analyzer', 'net']
     });
@@ -136,7 +137,7 @@
     const valueArgument = await switchDialog({
       dialogId: 'searchMaimaiValueArgumentSelector',
       dialogText: '譜面データの抽出方法を選択してください。推奨:「正確性重視」',
-      dialogNote: '「正確性重視」は、より正確な結果を提供しますが、処理時間がわずかに長くなることがあります。\n「速度重視」は、処理速度を優先するため、結果の精度は多少低下する可能性があります。',
+      dialogNote: '基本的に「正確性重視」を使用してください。\n「正確性重視」は、「速度重視」の2手法を組み合わせ、その手法ごとに結果が異なった場合に警告を表示するため、より正確な結果を提供しますが、処理時間が数ms程度長くなります。\n「速度重視」は、処理速度を優先するため、結果の精度は多少低下する可能性があります。',
       buttonLabels: ['正確性重視', '速度重視', '速度重視\n(その2)'],
       returnValues: ['both', 'value', 'span']
     });
@@ -218,10 +219,12 @@
 
     // script要素を作成
     const script = document.createElement('script');
-    const baseURL = 'https://basement96.github.io/searchMaimai/'
-    script.src = baseURL + fileName + '?v=' + SCRIPT_VERSION;
-    // const baseURL = 'http://localhost:8000/'; // 開発環境用
-    // script.src = baseURL + fileName + '?' + Date.now(); // 開発環境用
+    let baseURL = 'https://basement96.github.io/searchMaimai/';
+    script.src = `${baseURL}${fileName}?v=${SCRIPT_VERSION}`;
+    if (IS_DEVMODE) {
+      baseURL = 'http://localhost:8000/'; // 開発環境用
+      script.src = baseURL + fileName + '?' + Date.now(); // 開発環境用
+    }
 
     // 読み込み成功時
     script.onload = () => {

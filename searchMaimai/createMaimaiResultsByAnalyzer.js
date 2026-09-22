@@ -106,14 +106,15 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
         const achiEl = block.querySelector(".achi2, .music_score_block");
         return achiEl && achiEl.querySelector(".f_r");
       });
-    } else if (filType === "isDisplayed") {
+    } 
+    if (filType === "isDisplayed") {
       scoreBlocks = scoreBlocks.filter((block) => {
         return !block.classList.contains("hidden");
       });
     }
 
     if (scoreBlocks.length === 0) {
-      throw new Error(`対象となる譜面データが存在しません。以下を確認の後、再度実行してください。\n・「プレイ済み楽曲」を指定している場合は、プレイしたことがある譜面が含まれているかを確認する\n・譜面データが一覧で表示されているのを確認する\n・上記を試しても改善しない場合、バグの可能性があります。お手数ですが、制作者にご連絡ください。`);
+      throw new Error(`対象となる譜面データが存在しません。以下を確認の後、再度実行してください。\n譜面データの一覧にプレイしたことがある譜面が含まれているかを確認する\n・上記を試しても改善しない場合、バグの可能性があります。お手数ですが、制作者にご連絡ください。`);
     }
 
     const rows = [headers.join("\t")]; // ヘッダー行を追加
@@ -176,15 +177,15 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
             dxScore = rawDxScore ? parseInt(rawDxScore, 16) : "";
             dxMaxScore = rawDxMaxScore ? parseInt(rawDxMaxScore, 16) : "";
             notes = dxMaxScore / 3 || "";
-            dxRatio = rawDxRatio ? (Math.floor(parseInt(rawDxRatio, 16) / 1000) / 100) + "%": "";
+            dxRatio = rawDxRatio ? (Math.floor(parseInt(rawDxRatio, 16) / 1000) / 100).toFixed(2) + "%": "";
 
-            // 特定の譜面(でらスコ理論値が4095以上)に対して、処理後に警告を表示させる
+            // 特定の譜面(でらスコ理論値が4096 (16進数で1000)以上)に対して、処理後に警告を表示させる
             const dxMaxScoreOverFlow = [
-              ["Xaleid◆scopiX", "Re:MAS"],
-              ["系ぎて", "Re:MAS"],
-              ["Xaleid◆scopiX", "MAS"],
-              ["Latent Kingdom", "MAS"],
-              ["ラストピースに祝福と栄光を", "MAS"]
+              ["Xaleid◆scopiX", "Re:MAS"], // 6666
+              ["系ぎて", "Re:MAS"], // 4200
+              ["Xaleid◆scopiX", "MAS"], // 6543
+              ["Latent Kingdom", "MAS"], // 4113
+              ["ラストピースに祝福と栄光を", "MAS"] // 4197
             ];
 
             if (dxMaxScoreOverFlow.some(([overflowTitle, overflowDifficulty]) =>
@@ -198,7 +199,8 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
               });
 
               dxMaxScore += 4096;
-              dxMaxScore / 3;
+              if (dxScore < 2571) dxScore += 4096; // dxScoreがオーバーフローしていると仮定(2571=6666-4096+1)
+              notes = dxMaxScore / 3;
             }
 
             // sync表記の変換マッピング 
@@ -469,9 +471,9 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
       navigator.clipboard.writeText(resultTsv);
       let alertText = `${scoreBlocks.length}件の譜面データをクリップボードにコピーしました！\nExcelやGoogleスプレッドシートにそのまま貼り付けられます。`;
       if (warnSheets.length !== 0) {
-        alertText += `\n\n警告: いくつかの譜面データの情報が正確でない可能性があります。以下に示す譜面について、貼り付け後、攻略wiki等で情報を再確認してください。\n${warnSheets.join('\n')}`;
+        alertText += `\n\n警告: 計 ${warnSheets.length} 要素の譜面データの情報が正確でない可能性があります。以下に示す譜面について、貼り付け後、maimaiDxNETや攻略wiki等で情報を再確認してください。\n${warnSheets.join('\n')}`;
       }
-      console.log(`${funcName}: ${alertText} at ${Date.now()}`);
+      console.log(`${funcName}: ${alertText}\nat ${Date.now()}`);
       alert(`${alertText}\n(実行時間: ${Date.now() - startTime}ms)`);
     } catch (err) {
       throw new Error(`クリップボードへのコピーに失敗しました。以下を確認の後、再度実行してください。\n・ブラウザのセキュリティ制限によるブロック\n・OSのクリップボードの容量を超過している\n・上記を確認しても改善しない場合、お手数ですが、使用OS、ブラウザを明記して制作者にご連絡ください。`)
