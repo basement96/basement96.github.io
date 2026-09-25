@@ -1,5 +1,5 @@
 (() => {
-  const SCRIPT_VERSION = '0.2.0';
+  const SCRIPT_VERSION = '0.2.2'; // add UTAGE options, add subButtons, testing byNet ver
   const IS_DEVMODE = false;
 
   /**
@@ -12,19 +12,28 @@
       dialogText: 'どちらを使用しますか？',
       dialogNote: `レコード→楽曲スコア→カテゴリと進み、楽曲ジャンルにて全ジャンルを指定してから、取得したい難易度を表示させた状態にしてください。\n「あならいざもどき2」を使用する場合は、\nあならいざもどき2を実行したうえで、\nこのスクリプトを実行してください。\n\n(本スクリプトのバージョン: ${SCRIPT_VERSION})`,
       buttonLabels: ['あならいざもどき2\nモード', 'maimaiDXNet\nモード'],
-      returnValues: ['analyzer', 'net']
+      returnValues: ['analyzer', 'net'],
+      subButtonLabels: ['', 'キャンセル'],
+      subReturnValues: ['', 'cancel']
     });
 
+    if (selectedMethod === '') {
+      return selectSearchMethod();
+    }
+    if (selectedMethod === 'cancel') {
+      return;
+    }
     if (selectedMethod === 'analyzer') {
-      searchMaimaiByAnalyzer();
-    } else if (selectedMethod === 'net') {
-      searchMaimaiByNet();
+      return searchMaimaiByAnalyzer();
+    }
+    if (selectedMethod === 'net') {
+      return searchMaimaiByNet();
     }
   }
 
   selectSearchMethod();
 
-  function switchDialog({ dialogId, buttonLabels, returnValues, dialogText, dialogNote }) {
+  function switchDialog({ dialogId, buttonLabels, returnValues, subButtonLabels, subReturnValues, dialogText, dialogNote }) {
     const existingDialog = document.getElementById(dialogId);
     if (existingDialog) {
       existingDialog.remove();
@@ -64,6 +73,12 @@
     (document.body || document.documentElement).appendChild(dialog);
 
     buttonRow.style.gap = '8px';
+
+    const subButtonRow = document.createElement('div');
+    subButtonRow.style.display = 'flex';
+    subButtonRow.style.justifyContent = 'space-between';
+    subButtonRow.style.marginTop = '4px';
+    dialog.appendChild(subButtonRow);
 
     if (dialogNote) {
       const noteToggle = document.createElement('button');
@@ -107,6 +122,22 @@
         });
         buttonRow.appendChild(button);
       });
+
+      if (subButtonLabels && (subButtonLabels.length !== 0)) {
+        subButtonLabels.forEach((sLabel, sIndex) => {
+          const sButton = document.createElement('button');
+          sButton.textContent = sLabel;
+          sButton.style.padding = '3px 8px';
+          sButton.style.fontSize = '12px';
+          sButton.style.whiteSpace = 'pre-line';
+          sButton.addEventListener('click', () => {
+            dialog.remove();
+            resolve(subReturnValues[sIndex]);
+          });
+          subButtonRow.appendChild(sButton);
+        })
+      }
+
     });
 
 
@@ -126,78 +157,113 @@
 
     const outerHtml = dataField.outerHTML;
 
-    const playedArgument = await switchDialog({
-      dialogId: 'anl_argumentSelector_isPlayedOrAll',
-      dialogText: '抽出する楽曲の条件を選択してください',
-      dialogNote: '「表示中の楽曲」を選択すると、あならいざもどき2にて絞り込まれた譜面データのうち、プレイ済みの譜面が抽出されます。\n「プレイ済み全楽曲」を選択しても、全難易度の譜面が抽出されるわけではありません。\n開いている難易度のタブの楽曲のみが抽出されます。(MASTERのタブを開いている場合はMASTERの譜面のみが抽出されます)',
-      buttonLabels: ['表示中の楽曲', 'プレイ済み全楽曲'],
-      returnValues: ['isDisplayed', 'isPlayed']
-    });
+    while (true) {
+      const filTypeArgument = await switchDialog({
+        dialogId: 'anl_argumentSelector_filType',
+        dialogText: '抽出する楽曲の条件を選択してください',
+        dialogNote: '「表示中の楽曲」を選択すると、あならいざもどき2にて絞り込まれた譜面データのうち、プレイ済みの譜面が抽出されます。\n「プレイ済み全楽曲」を選択しても、全難易度の譜面が抽出されるわけではありません。\n開いている難易度のタブの楽曲のみが抽出されます。(MASTERのタブを開いている場合はMASTERの譜面のみが抽出されます)',
+        buttonLabels: ['表示中の楽曲', 'プレイ済み全楽曲'],
+        returnValues: ['isDisplayed', 'isPlayed'],
+        subButtonLabels: ['最初から', 'キャンセル'],
+        subReturnValues: ['restart', 'cancel']
+      });
+      if (filTypeArgument === 'restart') {
+        return selectSearchMethod();
+      }
+      if (filTypeArgument === 'cancel') {
+        return;
+      }
 
-    const valueArgument = await switchDialog({
-      dialogId: 'searchMaimaiValueArgumentSelector',
-      dialogText: '譜面データの抽出方法を選択してください。推奨:「正確性重視」',
-      dialogNote: '基本的に「正確性重視」を使用してください。\n「正確性重視」は、「速度重視」の2手法を組み合わせ、その手法ごとに結果が異なった場合に警告を表示するため、より正確な結果を提供しますが、処理時間が数ms程度長くなります。\n「速度重視」は、処理速度を優先するため、結果の精度は多少低下する可能性があります。',
-      buttonLabels: ['正確性重視', '速度重視', '速度重視\n(その2)'],
-      returnValues: ['both', 'value', 'span']
-    });
+      const anlTypeArgument = await switchDialog({
+        dialogId: 'anl_argumentSelector_anlType',
+        dialogText: '譜面データの抽出方法を選択してください。',
+        dialogNote: '基本的に「正確性重視(推奨)」を使用してください。\n「正確性重視」は、「速度重視」の2手法を組み合わせ、その手法ごとに結果が異なった場合に警告を表示するため、より正確な結果を提供しますが、処理時間が数ms程度長くなります。\n「速度重視」は、処理速度を優先するため、結果の精度は多少低下する可能性があります。',
+        buttonLabels: ['正確性重視\n(推奨)', '速度重視', '速度重視\n(その2)'],
+        returnValues: ['both', 'value', 'span'],
+        subButtonLabels: ['最初から', '抽出条件から', 'キャンセル'],
+        subReturnValues: ['restart', 'reset', 'cancel']
+      });
+      if (anlTypeArgument === 'restart') {
+        return selectSearchMethod();
+      }
+      if (anlTypeArgument === 'reset') {
+        continue; // 抽出楽曲の条件の選択画面に戻す
+      }
+      if (anlTypeArgument === 'cancel') {
+        return;
+      }
 
-    const confirmArgument = await switchDialog({
-      dialogId: 'searchMaimaiConfirmDialog',
-      dialogText: '抽出を開始します。よろしいですか？',
-      buttonLabels: ['はい', '最初から', 'キャンセル'],
-      returnValues: ['yes', 'no', 'cancel']
-    });
+      const confirmArgument = await switchDialog({
+        dialogId: 'anl_searchMaimaiConfirmDialog',
+        dialogText: `「あならいざもどき2」モードで抽出を開始します。よろしいですか？`,
+        buttonLabels: ['はい', '抽出条件から'],
+        returnValues: ['yes', 'reset'],
+        subButtonLabels: ['最初から', 'キャンセル'],
+        subReturnValues: ['restart', 'cancel']
+      });
+      if (confirmArgument === 'restart') {
+        return selectSearchMethod();
+      }
+      if (confirmArgument === 'reset') {
+        continue; // 抽出楽曲の条件の選択画面に戻す
+      }
+      if (confirmArgument === 'cancel') {
+        return;
+      }
 
-    if (confirmArgument === 'no') {
-      selectSearchMethod();
-      return;
-    } else if (confirmArgument === 'cancel') {
+      console.log(`${funcName}: [${filTypeArgument}, ${anlTypeArgument}] at ${Date.now()}`);
+
+      loadFunction('createMaimaiResultsByAnalyzer.js', 'createMaimaiResultsByAnalyzer', [
+        outerHtml,
+        filTypeArgument,
+        anlTypeArgument
+      ]);
+
       return;
     }
-
-    console.log(`${funcName}: [${playedArgument}, ${valueArgument}] at ${Date.now()}`);
-
-    loadFunction('createMaimaiResultsByAnalyzer.js', 'createMaimaiResultsByAnalyzer', [
-      outerHtml,
-      playedArgument,
-      valueArgument
-    ]);
 
 
   }
 
-  function searchMaimaiByNet() {
-    alert ('申し訳ございません。現在開発中です。あならいざもどき2モードをご使用ください。');
-    return;
-    const targetElements = Array.from(document.querySelectorAll('[class*="w_450 m_15 p_r f_0"]'));
-    let htmlText = '';
-    
-    if (targetElements.length > 0) {
-      htmlText = targetElements.map((element) => element.outerHTML).join('\n');
-    } else {
-      const pageHtml = document.documentElement.outerHTML;
-      const startIndex = pageHtml.indexOf('POPS＆アニメ');
-      const footerIndex = pageHtml.indexOf('<footer', startIndex);
+  async function searchMaimaiByNet() {
+    const funcName = searchMaimaiByNet.name;
+    alert('申し訳ございません。現在開発中です。あならいざもどき2モードをご使用ください。');
 
-      if (startIndex !== -1 && footerIndex !== -1) {
-        htmlText = pageHtml.slice(startIndex, footerIndex);
-      } else {
-        alert('対象の要素またはPOPS＆アニメの記述が見つかりませんでした。');
+    // 1. 譜面データが格納されている要素を全抽出 (失敗時はif内で再度取得を試みる)
+    let targetElements = Array.from(document?.querySelectorAll?.('.w_450.m_15.p_r.f_0') || []);
+
+    if (targetElements.length === 0) {
+      console.warn(`${funcName}: targetElementsの取得再試行 at ${Date.now()}`);
+      let sheet = document.querySelector('.screw_block')?.nextElementSibling; // 1番上に表示されている譜面 もしくは undifined
+
+      if (!sheet) {
+        const errText = `譜面データが見つかりませんでした。以下を確認の後、再度実行してください。\n・レコード→楽曲スコア→カテゴリと進み、取得したい難易度を表示させた状態にする\n・あならいざもどき2実行済の場合、ページをリロードする`;
+        console.error(`${funcName}: ${errText} at ${Date.now()}`);
+        alert(errText);
         return;
       }
+      // フッダー要素にたどり着く or 要素がなくなる まで繰り返す (譜面データを取得)
+      do {
+        // スクロールポイントおよびジャンルタグ部分は省いて、残った部分(譜面データ)をtargetElementsに入れる
+        if (sheet.tagName !== 'P' && !sheet.classList.contains('screw_block')) {
+          targetElements.push(sheet);
+        }
+        sheet = sheet.nextElementSibling;
+      } while (sheet && sheet.tagName !== 'FOOTER');
     }
 
-    createMaimaiResultsByNet(htmlText);
+    // 2. オプションを指定するダイアログを追加
+    const minLevelArgument = await switchDialog({
+      dialogId: 'net_argumentSelector_minLevel',
+      dialogText: `抽出する譜面データの最小レベルを選択してください。`,
+      dialogNote: `Lv. 13未満のレベルを表示させるには「全曲」を選択してください。\n注意: 取得したい難易度を表示させた状態にしてください。(例: BASIC譜面が表示されている状態で「14+」を選択しても何も出ません)`,
+      buttonLabels: ['全曲', '13', '13+', '14', '14+'],
+      returnValues: ['isPlayed', '13', '13+', '14', '14+'],
+      subButtonLabels: ['最初から', 'キャンセル'],
+      subReturnValues: ['restart', 'cancel']  
+    })
 
-    /*navigator.clipboard.writeText(htmlText)
-      .then(() => {
-        alert('クリップボードにコピーしました。');
-      })
-      .catch((error) => {
-        alert('クリップボードへのコピーに失敗しました。\nエラー理由: ' + error);
-        console.error('クリップボードへのコピーに失敗しました:', error);
-      });*/
+
   }
 
 

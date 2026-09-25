@@ -77,13 +77,14 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
     // 譜面種表記の変換マッピング
     const typeMap = {
       standard: "SD",
-      dx: "DX"
+      dx: "DX",
+      utage: "UTAGE"
     };
 
 
     // 獲得スコアを取り出す関数
     function parseTitle(container) {
-      const titleEl = container.querySelector(".music_title_dx, .music_title_standard, .music_title");
+      const titleEl = container.querySelector(".music_title_dx, .music_title_standard, .music_title, .music_title_utage");
       return titleEl ? titleEl.textContent.trim() : "";
     }
 
@@ -97,21 +98,15 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
     const parser = new DOMParser();
     const doc = parser.parseFromString(outerHtml, "text/html");
 
-    let scoreBlocks = Array.from(
-      doc.querySelectorAll(".music_score_back")
-    );
-
-    if (filType === "isPlayed" || filType === "isDisplayed") {
-      scoreBlocks = scoreBlocks.filter((block) => {
-        const achiEl = block.querySelector(".achi2, .music_score_block");
-        return achiEl && achiEl.querySelector(".f_r");
-      });
-    } 
-    if (filType === "isDisplayed") {
-      scoreBlocks = scoreBlocks.filter((block) => {
-        return !block.classList.contains("hidden");
-      });
-    }
+    // music_score_blockを探すことでプレイ済みの楽曲を抽出し、filTypeがisDisplayedであればhiddenクラスの持つものを排除する
+    let scoreBlocks = Array.from(doc.querySelectorAll(".music_score_back")).filter((block) => {
+      const achiEl = block.querySelector(".achi2, .music_score_block");
+      return (
+        achiEl &&
+        achiEl.querySelector(".f_r") &&
+        (filType !== "isDisplayed" || !block.classList.contains("hidden"))
+      );
+    });
 
     if (scoreBlocks.length === 0) {
       throw new Error(`対象となる譜面データが存在しません。以下を確認の後、再度実行してください。\n譜面データの一覧にプレイしたことがある譜面が含まれているかを確認する\n・上記を試しても改善しない場合、バグの可能性があります。お手数ですが、制作者にご連絡ください。`);
@@ -167,7 +162,7 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
 
             difficulty = diffMap[rawDiff.toLowerCase()] || rawDiff.toUpperCase();
             chartType = typeMap[rawType.toLowerCase()] || rawType.toUpperCase();
-            level = rawLevel ? rawLevel.replace("p", "+") : "";
+            level = rawLevel ? rawLevel.replace("p", "+").replace("u", "?") : ""; // replace u はUTAGE用
             const scoreFormat = new Intl.NumberFormat('ja-JP', {
               style: 'percent',
               minimumFractionDigits: 4, // 小数点以下の最小桁数
@@ -328,7 +323,11 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
             const rawLevel = block.querySelector(".lv_block_new") || "";
 
             let rawType = "dx"; // デフォルト値
-            if (block.querySelector(".music_title_back_standard")) rawType = "standard";
+            if (block.querySelector(".music_title_back_standard")) {
+              rawType = "standard";
+            } else if (block.querySelector(".music_title_back_utage")) {
+              rawType = "utage";
+            }
 
             const rawScore = sp_parseScore(block);
             const rawDxScore = block.querySelector(".dxsc2") ? block.querySelector(".dxsc2").textContent.split("/")[0] : "";
