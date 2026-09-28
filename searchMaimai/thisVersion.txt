@@ -1,0 +1,4 @@
+{
+version: "0.3.0",
+new: "added byNet mode, added downloadTsv, fixed DXstar '' to 0"
+}

@@ -1,3 +1,10 @@
+/**
+ * あならいざもどき2使用時において、html要素から楽曲の抽出条件、方法を指定して、タブ区切り方式でリザルトの配列をクリップボードに貼り付ける
+ * @param {String} outerHtml - あならいざもどき2使用時のHtml要素 (datafield要素のみで動く) 
+ * @param {String} filType - 抽出する楽曲の条件 ('isPlayed': プレイ済み, 'isDisplayed': プレイ済みかつあならいざもどき2によって絞り込まれた譜面)
+ * @param {String} anlType - 抽出する方法 ('value': music_name_blockクラスのdiv要素内のvalue=を参照, 'span': 表示されている内容及び画像URLを参照, 'both': 両方を使用し、データを比較し、不一致は警告する(spanを優先する))
+ * @returns {void} クリップボードに貼り付けをしてそのまま終了する
+ */
 function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
   const funcName = createMaimaiResultsByAnalyzer.name;
   const startTime = Date.now();
@@ -81,7 +88,6 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
       utage: "UTAGE"
     };
 
-
     // 獲得スコアを取り出す関数
     function parseTitle(container) {
       const titleEl = container.querySelector(".music_title_dx, .music_title_standard, .music_title, .music_title_utage");
@@ -109,16 +115,19 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
     });
 
     if (scoreBlocks.length === 0) {
-      throw new Error(`対象となる譜面データが存在しません。以下を確認の後、再度実行してください。\n譜面データの一覧にプレイしたことがある譜面が含まれているかを確認する\n・上記を試しても改善しない場合、バグの可能性があります。お手数ですが、制作者にご連絡ください。`);
+      throw new Error(`対象となる譜面データが存在しません。以下を確認の後、再度実行してください。\n・譜面データの一覧にプレイしたことがある譜面が含まれているかを確認する\n・上記を試しても改善しない場合、バグの可能性があります。お手数ですが、制作者にご連絡ください。`);
     }
 
+    /**
+     * 以下のforEach文でrowsに譜面データを入れていく
+     * @type {any[][]}
+     */
     const rows = [headers.join("\t")]; // ヘッダー行を追加
-
     const warnSheets = []; // 'both'使用時や'value'使用時に不一致データが見つかったときに格納する
 
     scoreBlocks.forEach((block) => {
-      // --- タイトル ---
-      const title = parseTitle(block);
+      // --- タイトル ---改行タグ等を変換し、余分な空白を削除し、(D✪N’T  ST✪P  R✪CKIN’対策)、両端のダブルクォーテーションをexcel,googleスプレッドシートでの文字列扱いにするために二重にする("411Ψ892"対策)
+      const title = parseTitle(block).replace(/[\t\n]/g, "").replace(/ {2,}/g, " ").replace(/^"(.*)"$/, '""$1""');
 
       // --- value属性の取得と解析 ---
       const nameBlock = block.querySelector(".music_name_block");
@@ -148,17 +157,17 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
               console.warn("value属性が見つかりません:", block);
             }
             const parts = rawValue ? rawValue.split(",") : [];
-            const rawDiff = parts[1] || "";
-            const rawType = parts[2] || "";
-            const rawLevel = parts[3] || "";
-            const rawScore = parts[4] || "";
-            const rawDxScore = parts[5] || "";
-            const rawDxMaxScore = parts[6] || "";
-            const rawDxRatio = parts[7] || "";
-            const rawSync = parts[8] || "";
-            const rawApFc = parts[9] || "";
-            const rawRank = parts[10] || "";
-            const rawDxStar = parts[11] || "";
+            const rawDiff = parts[1] ?? null;
+            const rawType = parts[2] ?? null;
+            const rawLevel = parts[3] ?? null;
+            const rawScore = parts[4] ?? null;
+            const rawDxScore = parts[5] ?? null;
+            const rawDxMaxScore = parts[6] ?? null;
+            const rawDxRatio = parts[7] ?? null;
+            const rawSync = parts[8] ?? null;
+            const rawApFc = parts[9] ?? null;
+            const rawRank = parts[10] ?? null;
+            const rawDxStar = parts[11] ?? null;
 
             difficulty = diffMap[rawDiff.toLowerCase()] || rawDiff.toUpperCase();
             chartType = typeMap[rawType.toLowerCase()] || rawType.toUpperCase();
@@ -235,7 +244,7 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
               "1": "D"
             };
             rank = vl_rankMap[rawRank] || rawRank;
-            dxStar = Number(rawDxStar) || "";
+            dxStar = rawDxStar !== null && !Number.isNaN(Number(rawDxStar)) ? Number(rawDxStar) : "";
 
             break;
           }
@@ -348,7 +357,7 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
             sync = rawSync || "";
             apfc = rawApFc || "";
             rank = rawRank || "";
-            dxStar = Number(rawDxStar) || "";
+            dxStar = !Number.isNaN(Number(rawDxStar)) && rawDxStar !== null ? Number(rawDxStar) : "";
 
             break;
           }
@@ -451,36 +460,30 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
         rank
       ];
 
-      // エスケープ処理（タイトルにタブや改行が入っていた場合の対策）
-      const formattedRow = rowData.map((val) => {
-        const str = val ?? "";
-        const text = String(str);
-        if (text.includes("\t") || text.includes("\n") || text.includes('"')) {
-          return `"${text.replace(/"/g, '""')}"`;
-        }
-        return text;
-      });
-
-      rows.push(formattedRow.join("\t"));
+      rows.push(rowData.join("\t"));
     });
 
     // 3. クリップボードへのコピー実行
     const resultTsv = rows.join("\n");
     try {
       navigator.clipboard.writeText(resultTsv);
-      let alertText = `${scoreBlocks.length}件の譜面データをクリップボードにコピーしました！\nExcelやGoogleスプレッドシートにそのまま貼り付けられます。`;
+      let alertText = `${scoreBlocks.length} 件の譜面データをクリップボードにコピーしました！\nExcelやGoogleスプレッドシートにそのまま貼り付けられます。`;
       if (warnSheets.length !== 0) {
         alertText += `\n\n警告: 計 ${warnSheets.length} 要素の譜面データの情報が正確でない可能性があります。以下に示す譜面について、貼り付け後、maimaiDxNETや攻略wiki等で情報を再確認してください。\n${warnSheets.join('\n')}`;
       }
       console.log(`${funcName}: ${alertText}\nat ${Date.now()}`);
       alert(`${alertText}\n(実行時間: ${Date.now() - startTime}ms)`);
+      return {status: true, message: alertText, executionTime: Date.now() - startTime, resultTsv: resultTsv};
     } catch (err) {
-      throw new Error(`クリップボードへのコピーに失敗しました。以下を確認の後、再度実行してください。\n・ブラウザのセキュリティ制限によるブロック\n・OSのクリップボードの容量を超過している\n・上記を確認しても改善しない場合、お手数ですが、使用OS、ブラウザを明記して制作者にご連絡ください。`)
+      throw new Error(`クリップボードへのコピーに失敗しました。\n(理由: ${err.message})\n以下を確認の後、再度実行してください。\n・ブラウザのセキュリティ制限によるブロック\n・OSのクリップボードの容量を超過している\n・上記を確認しても改善しない場合、お手数ですが、使用OS、ブラウザを明記して制作者にご連絡ください。`)
     }
 
   } catch (e) {
-    console.error(`${e.message} at ${Date.now()}`);
-    alert(`${e.message} (実行時間: ${Date.now() - startTime}ms)`);
+    console.error(`${funcName}: ${e.message} at ${Date.now()}`);
+    alert(`エラーが発生しました。\n(理由: ${e.message}\n(実行時間: ${Date.now() - startTime}ms)`);
+    return {status: false, message: e.message, executionTime: Date.now() - startTime};
   }
+
+
 }
 

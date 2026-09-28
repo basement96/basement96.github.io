@@ -1,10 +1,12 @@
 (() => {
-  const SCRIPT_VERSION = '0.2.2'; // add UTAGE options, add subButtons, testing byNet ver
+  const SCRIPT_VERSION = '0.3.0'; // added byNet ver, added downLoadTsv, fixed DXstar '' to 0
   const IS_DEVMODE = false;
 
   /**
    * ブックマークレット実行時に実行される非同期関数
    * 楽曲取得方法を選択するダイアログを表示し、選択に応じて処理を分岐させる
+   * @param {void}
+   * @returns {Function} 次に実行する関数名
    */
   async function selectSearchMethod() {
     const selectedMethod = await switchDialog({
@@ -33,6 +35,22 @@
 
   selectSearchMethod();
 
+
+  /**
+   * ボタンを含むダイアログを表示させて、選択したボタンに設定された文字列を返す
+   * 
+   * selectSearchMethod(), searchMaimaiByAnalyzer(), searchMaimaiByNet() で使用する
+   * @param {Object} options - 引数となるオブジェクト
+   * @param {String} options.dialogId - ダイアログのdivに設定するId名
+   * @param {Array} options.buttonLabels - 各ボタン内に表示する文章 (左から順にボタンになる)
+   * @param {Array} options.returnValues - 各ボタンを押下したときに返り値にする文字列
+   * @param {Array} options.subButtonLabels - メインのボタンの下に配置されるボタンに表示される文章 (省略可)
+   * @param {Array} options.subReturnValues - 各サブボタンを押下したときに返り値にする文字列 (省略可)
+   * @param {String} options.dialogText - ボタンの上に表示する文章 (省略可)
+   * @param {String} options.dialogNote - (サブ)ボタンの下に「詳しい説明:」というボタンを設置し、それを押下すると表示される文章 (省略可)
+   * 
+   * @returns {String} returnValues, subReturnValues内のうち、ボタンによって選択された文字列
+   */
   function switchDialog({ dialogId, buttonLabels, returnValues, subButtonLabels, subReturnValues, dialogText, dialogNote }) {
     const existingDialog = document.getElementById(dialogId);
     if (existingDialog) {
@@ -116,6 +134,8 @@
         button.style.padding = '6px 14px';
         button.style.fontSize = '14px';
         button.style.whiteSpace = 'pre-line';
+        button.style.backgroundColor = '#fff';
+        button.style.border = 'none';
         button.addEventListener('click', () => {
           dialog.remove();
           resolve(returnValues[index]);
@@ -130,6 +150,8 @@
           sButton.style.padding = '3px 8px';
           sButton.style.fontSize = '12px';
           sButton.style.whiteSpace = 'pre-line';
+          sButton.style.backgroundColor = '#fff';
+          sButton.style.border = 'none';
           sButton.addEventListener('click', () => {
             dialog.remove();
             resolve(subReturnValues[sIndex]);
@@ -143,7 +165,12 @@
 
   }
 
-
+  /**
+   * selectSearchMethod()によってあならいざもどき2モードが指定されたときに実行する非同期関数
+   * DOMから使用する要素を抽出した後、ダイアログを複数表示させて、createMaimaiResultsByAnalyzerに渡す引数を決定してloadFunctionを通して実行する
+   * @param {void}
+   * @returns {void}
+   */
   async function searchMaimaiByAnalyzer() {
     const funcName = searchMaimaiByAnalyzer.name;
     const dataField = document.querySelector('#datafield');
@@ -213,11 +240,39 @@
 
       console.log(`${funcName}: [${filTypeArgument}, ${anlTypeArgument}] at ${Date.now()}`);
 
-      loadFunction('createMaimaiResultsByAnalyzer.js', 'createMaimaiResultsByAnalyzer', [
+      const result = await loadFunction('createMaimaiResultsByAnalyzer.js', 'createMaimaiResultsByAnalyzer', [
         outerHtml,
         filTypeArgument,
         anlTypeArgument
       ]);
+
+      if (result.status && result.resultTsv) {
+
+        const download = await switchDialog({
+          dialogId: 'anl_downloadTSVConfirmDialog',
+          dialogText: `抽出が完了しました。tsvファイルをダウンロードしますか？`,
+          buttonLabels: ['はい', 'いいえ'],
+          returnValues: ['yes', 'no']
+        });
+
+        if (download === 'yes') {
+
+          const now = new Date();
+          const formatter = new Intl.DateTimeFormat('ja-JP', {
+            year: '2-digit',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false // 24時間表記を強制
+          });
+          const parts = formatter.formatToParts(now);
+          const dateTime = parts.filter(p => p.type !== 'literal').map(p => p.value).join('');
+
+          downloadTSV(result.resultTsv, `myMaiResultsByAnl_${dateTime}_${filTypeArgument}_${anlTypeArgument}.tsv`);
+        }
+
+      }
 
       return;
     }
@@ -225,10 +280,15 @@
 
   }
 
+
+  /**
+   * selectSearchMethod()によってmaimaiDXNetモードが指定されたときに実行する非同期関数
+   * DOMから使用する要素を抽出し配列を作成させた後、ダイアログを複数表示させて、createMaimaiResultsByNetで抽出条件として使用する引数を決定してloadFunctionを通して実行する
+   * @param {void}
+   * @returns {void}
+   */
   async function searchMaimaiByNet() {
     const funcName = searchMaimaiByNet.name;
-    alert('申し訳ございません。現在開発中です。あならいざもどき2モードをご使用ください。');
-
     // 1. 譜面データが格納されている要素を全抽出 (失敗時はif内で再度取得を試みる)
     let targetElements = Array.from(document?.querySelectorAll?.('.w_450.m_15.p_r.f_0') || []);
 
@@ -253,71 +313,207 @@
     }
 
     // 2. オプションを指定するダイアログを追加
-    const minLevelArgument = await switchDialog({
-      dialogId: 'net_argumentSelector_minLevel',
-      dialogText: `抽出する譜面データの最小レベルを選択してください。`,
-      dialogNote: `Lv. 13未満のレベルを表示させるには「全曲」を選択してください。\n注意: 取得したい難易度を表示させた状態にしてください。(例: BASIC譜面が表示されている状態で「14+」を選択しても何も出ません)`,
-      buttonLabels: ['全曲', '13', '13+', '14', '14+'],
-      returnValues: ['isPlayed', '13', '13+', '14', '14+'],
-      subButtonLabels: ['最初から', 'キャンセル'],
-      subReturnValues: ['restart', 'cancel']  
-    })
+    while (true) {
+      const minLevelArgument = await switchDialog({
+        dialogId: 'net_argumentSelector_minLevel',
+        dialogText: `抽出する譜面データの最小レベルを選択してください。`,
+        dialogNote: `Lv. 13未満のレベルを表示させるには「全曲」を選択してください。\n注意: 取得したい難易度を表示させた状態にしてください。(例: BASIC譜面が表示されている状態で「14+」を選択しても何も出ません)`,
+        buttonLabels: ['全曲', '13', '13+', '14', '14+'],
+        returnValues: ['isPlayed', '13', '13+', '14', '14+'],
+        subButtonLabels: ['最初から', 'キャンセル'],
+        subReturnValues: ['restart', 'cancel']
+      });
+      if (minLevelArgument === 'restart') {
+        return selectSearchMethod();
+      }
+      if (minLevelArgument === 'cancel') {
+        return;
+      }
+
+      const minRankArgument = await switchDialog({
+        dialogId: 'net_argumentSelector_minRank',
+        dialogText: `抽出する譜面データの最小スコアを選択してください。`,
+        dialogNote: `SS未満のスコアを表示させるには「全曲」を選択してください。`,
+        buttonLabels: ['全曲', '99.0%\nSS', '100.0%\nSSS', '100.5%\nSSS+', 'AP'],
+        returnValues: ['isPlayed', 'SS', 'SSS', 'SSS+', 'AP'],
+        subButtonLabels: ['最初から', 'レベル選択から', 'キャンセル'],
+        subReturnValues: ['restart', 'reset', 'cancel']
+      });
+      if (minRankArgument === 'restart') {
+        return selectSearchMethod();
+      }
+      if (minRankArgument === 'reset') {
+        continue;
+      }
+      if (minRankArgument === 'cancel') {
+        return;
+      }
+
+      const confirmArgument = await switchDialog({
+        dialogId: 'net_searchMaimaiConfirmDialog',
+        dialogText: `「maimaiDXNet」モードで抽出を開始します。よろしいですか？`,
+        buttonLabels: ['はい', 'レベル選択から'],
+        returnValues: ['yes', 'reset'],
+        subButtonLabels: ['最初から', 'キャンセル'],
+        subReturnValues: ['restart', 'cancel']
+      });
+      if (confirmArgument === 'restart') {
+        return selectSearchMethod();
+      }
+      if (confirmArgument === 'reset') {
+        continue;
+      }
+      if (confirmArgument === 'cancel') {
+        return;
+      }
+
+      console.log(`${funcName}: [${minLevelArgument}, ${minRankArgument}] at ${Date.now()}`);
+
+      // 指定された関数をロードして実行
+      const result = await loadFunction('createMaimaiResultsByNet.js', 'createMaimaiResultsByNet', [
+        targetElements,
+        minLevelArgument,
+        minRankArgument
+      ]);
+
+      // 結果が正常に返ってきた場合、tsvファイルをダウンロードするか確認するダイアログを表示
+      if (result.status && result.resultTsv) {
+
+        const download = await switchDialog({
+          dialogId: 'net_downloadTSVConfirmDialog',
+          dialogText: `抽出が完了しました。tsvファイルをダウンロードしますか？`,
+          buttonLabels: ['はい', 'いいえ'],
+          returnValues: ['yes', 'no']
+        });
+        if (download === 'yes') {
+
+          const now = new Date();
+          const formatter = new Intl.DateTimeFormat('ja-JP', {
+            year: '2-digit',
+            month: '2-digit',
+            day: '2-digit',
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false // 24時間表記を強制
+          });
+          const parts = formatter.formatToParts(now);
+          const dateTime = parts.filter(p => p.type !== 'literal').map(p => p.value).join('');
+
+          downloadTSV(result.resultTsv, `myMaiResultsByNet_${dateTime}_${minLevelArgument}_${minRankArgument}.tsv`);
+        }
+
+      }
+
+      return;
+
+    }
 
 
   }
 
 
-  // スクリプトをオンデマンドで読み込んで実行する関数
+  /**
+   * スクリプトをオンデマンドで読み込んで実行する関数 (promise処理)
+   * IS_DEVMODEによってbaseURLを変更し、(trueでローカルサーバー, falseでgithub)、baseURL上にあるfileNameを読み込み、そのファイル内のfnNameをarg内の要素を引数として実行する
+   * 既に読み込まれたファイルが指定された場合、そのまま実行する
+   * @param {String} fileName - baseURL+fileNameの形式でURLを作成する。「.js」を忘れてはいけない
+   * @param {String} fnName - 呼び出す関数名
+   * @param {Array} arg - 関数の引数 (省略可)
+   * @returns {void}
+   */
   function loadFunction(fileName, fnName, arg = []) {
     const funcName = loadFunction.name;
 
-    console.log(`loadFunction: ${fileName}, ${fnName}`);
-    // 既に読み込み済みならスクリプトタグを追加せず直接実行
-    try {
-      if (typeof window[fnName] === 'function') {
-        window[fnName](...arg);
+    return new Promise((resolve, reject) => {
+
+      console.log(`loadFunction: ${fileName}, ${fnName}`);
+      // 既に読み込み済みならスクリプトタグを追加せず直接実行
+      try {
+        if (typeof window[fnName] === 'function') {
+          const result = window[fnName](...arg);
+          resolve(result);
+          return;
+        }
+      } catch (e) {
+        console.error(`${funcName}: ${fnName} の実行中にエラーが発生しました。 at ${Date.now()}`, e);
+
+        reject(e);
         return;
       }
-    } catch (e) {
-      console.error(`${funcName}: ${fnName} の実行中にエラーが発生しました。 at ${Date.now()}`, e);
-      return;
-    }
 
-    // script要素を作成
-    const script = document.createElement('script');
-    let baseURL = 'https://basement96.github.io/searchMaimai/';
-    script.src = `${baseURL}${fileName}?v=${SCRIPT_VERSION}`;
-    if (IS_DEVMODE) {
-      baseURL = 'http://localhost:8000/'; // 開発環境用
-      script.src = baseURL + fileName + '?' + Date.now(); // 開発環境用
-    }
+      // script要素を作成
+      const script = document.createElement('script');
+      let baseURL = 'https://basement96.github.io/searchMaimai/';
+      script.src = `${baseURL}${fileName}?v=${SCRIPT_VERSION}`;
+      if (IS_DEVMODE) {
+        baseURL = 'http://localhost:8000/'; // 開発環境用
+        script.src = baseURL + fileName + '?' + Date.now(); // 開発環境用
+      }
 
-    // 読み込み成功時
-    script.onload = () => {
-      if (typeof window[fnName] === 'function') {
-        try {
-          window[fnName](...arg);
-        } catch (e) {
-          console.error(`${funcName}: ${fnName} の実行中にエラーが発生しました。 at ${Date.now()}`, e);
+      // 読み込み成功時
+      script.onload = () => {
+        if (typeof window[fnName] === 'function') {
+          try {
+            const result = window[fnName](...arg);
+            resolve(result);
+          } catch (e) {
+            console.error(`${funcName}: ${fnName} の実行中にエラーが発生しました。 at ${Date.now()}`, e);
+            reject(e);
+          }
+        } else {
+          const errText = `処理に必要な関数 ${fnName} が見つかりませんでした。以下を確認の後、再度実行してください。\n・数分程度間をあける\n・「${baseURL}」のキャッシュを削除する\n・上記を試しても改善しない場合、バグの可能性があります。お手数ですが、制作者にご連絡ください。`
+          console.error(`${funcName}: ${errText} at ${Date.now()}`);
+          alert(errText);
+          reject(new Error(errText));
         }
-      } else {
-        const errText = `処理に必要な関数 ${fnName} が見つかりませんでした。以下を確認の後、再度実行してください。\n・数分程度間をあける\n・「${baseURL}」のキャッシュを削除する\n・上記を試しても改善しない場合、バグの可能性があります。お手数ですが、制作者にご連絡ください。`
+      };
+
+      // 読み込み失敗時
+      script.onerror = () => {
+        const errText = `必要な ${fileName} の読み込みに失敗しました。以下を確認の後、再度実行してください。\n・インターネット接続を確認する\n・数分程度間をあける\n・「${baseURL}」のキャッシュを削除する\n・上記を試しても改善しない場合、バグの可能性があります。お手数ですが、制作者にご連絡ください。`;
         console.error(`${funcName}: ${errText} at ${Date.now()}`);
         alert(errText);
-      }
-    };
+        reject(new Error(errText));
+      };
 
-    // 読み込み失敗時
-    script.onerror = () => {
-      const errText = `必要な ${fileName} の読み込みに失敗しました。以下を確認の後、再度実行してください。\n・インターネット接続を確認する\n・数分程度間をあける\n・「${baseURL}」のキャッシュを削除する\n・上記を試しても改善しない場合、バグの可能性があります。お手数ですが、制作者にご連絡ください。`;
-      console.error(`${funcName}: ${errText} at ${Date.now()}`);
-      alert(errText);
-    };
+      // scriptをHTMLに追加して読み込み開始
+      document.head.appendChild(script);
 
-    // scriptをHTMLに追加して読み込み開始
-    document.head.appendChild(script);
+    });
 
 
+  }
+
+  
+  /**
+   * TSVファイルをダウンロードする
+   * @param {string} tsv 
+   * @param {string} filename
+   * @returns {void}
+   */
+  function downloadTSV(tsv, filename = 'data.tsv') {
+    const funcName = downloadTSV.name;
+    console.log(`${funcName}: ${filename} をダウンロードします。 at ${Date.now()}`);
+    try {
+      // BOM（BOMありUTF-8）を付与してExcelでの文字化けを防ぐ
+      const bom = new Uint8Array([0xEF, 0xBB, 0xBF]);
+      const blob = new Blob([bom, tsv], { type: 'text/tab-separated-values;charset=utf-8;' });
+
+      // ダウンロード用のリンクを生成
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename;
+
+      // DOMに一時追加してクリックし、すぐに削除
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      alert(`tsvファイルのダウンロード中にエラーが発生しました。\n(理由: ${error.message})\n以下を確認の後、再度実行してください。\n・ブラウザ、OSのセキュリティ制限によるブロック\n・上記を確認しても改善しない場合、お手数ですが、使用OS、ブラウザを明記して制作者にご連絡ください。`);
+      console.error(`${funcName}: ${filename} のダウンロード中にエラーが発生しました。 at ${Date.now()}`, error);
+    }
   }
 
 
