@@ -1,6 +1,6 @@
 (() => {
-  const SCRIPT_VERSION = '0.3.0'; // added byNet ver, added downLoadTsv, fixed DXstar '' to 0
-  const IS_DEVMODE = false;
+  const SCRIPT_VERSION = '0.3.1'; // Fixed several potential issues related to error handling.
+  const IS_DEVMODE = true;
 
   /**
    * ブックマークレット実行時に実行される非同期関数
@@ -240,11 +240,15 @@
 
       console.log(`${funcName}: [${filTypeArgument}, ${anlTypeArgument}] at ${Date.now()}`);
 
-      const result = await loadFunction('createMaimaiResultsByAnalyzer.js', 'createMaimaiResultsByAnalyzer', [
-        outerHtml,
-        filTypeArgument,
-        anlTypeArgument
-      ]);
+      try {
+        const result = await loadFunction('createMaimaiResultsByAnalyzer.js', 'createMaimaiResultsByAnalyzer', [
+          outerHtml,
+          filTypeArgument,
+          anlTypeArgument
+        ]);
+      } catch (error) {
+        console.error(`${funcName}: ${error.message} at ${Date.now()}`);
+      }
 
       if (result.status && result.resultTsv) {
 
@@ -369,12 +373,16 @@
 
       console.log(`${funcName}: [${minLevelArgument}, ${minRankArgument}] at ${Date.now()}`);
 
-      // 指定された関数をロードして実行
-      const result = await loadFunction('createMaimaiResultsByNet.js', 'createMaimaiResultsByNet', [
-        targetElements,
-        minLevelArgument,
-        minRankArgument
-      ]);
+      try {
+        // 指定された関数をロードして実行
+        const result = await loadFunction('createMaimaiResultsByNet.js', 'createMaimaiResultsByNet', [
+          targetElements,
+          minLevelArgument,
+          minRankArgument
+        ]);
+      } catch (error) {
+        console.error(`${funcName}: ${error.message} at ${Date.now()}`);
+      }
 
       // 結果が正常に返ってきた場合、tsvファイルをダウンロードするか確認するダイアログを表示
       if (result.status && result.resultTsv) {
@@ -484,13 +492,6 @@
 
   }
 
-  
-  /**
-   * TSVファイルをダウンロードする
-   * @param {string} tsv 
-   * @param {string} filename
-   * @returns {void}
-   */
   function downloadTSV(tsv, filename = 'data.tsv') {
     const funcName = downloadTSV.name;
     console.log(`${funcName}: ${filename} をダウンロードします。 at ${Date.now()}`);

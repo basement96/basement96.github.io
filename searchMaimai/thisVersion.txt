@@ -1,4 +1,4 @@
 {
-version: "0.3.0",
-new: "added byNet mode, added downloadTsv, fixed DXstar '' to 0"
+version: "0.3.1",
+new: "Fixed several potential issues related to error handling"
 }

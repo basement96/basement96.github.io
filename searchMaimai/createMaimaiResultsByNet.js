@@ -5,7 +5,7 @@
 * @param {String} minRankArgument - 抽出対象とする譜面の最小ランク (全曲ならプレイ済み楽曲全部)
 * @returns {void} クリップボードに貼り付けをしてそのまま終了する
 */
-function createMaimaiResultsByNet(targetElements, minLevelArgument, minRankArgument) {
+async function createMaimaiResultsByNet(targetElements, minLevelArgument, minRankArgument) {
   const funcName = createMaimaiResultsByNet.name;
   const startTime = Date.now();
   console.log(`${funcName}実行開始 at ${startTime}`);
@@ -80,14 +80,14 @@ function createMaimaiResultsByNet(targetElements, minLevelArgument, minRankArgum
     const rows = [];
 
     // 2. targetElementsの各要素から、タイトル等の譜面データを抽出する
-    for (block of targetElements) {
+    for (const block of targetElements) {
       // 2-0. music_score_blockが存在しない場合は未プレイなのでスキップする
       if (!block.querySelector(".music_score_block")) {
         continue; // 今後の処理及びrowsに追加をスキップする
       }
 
       // 2-1. minLevelArgument, minRankArgumentを確認して絞り込み対象かを決定するためにlevel, rank, apfcを先に定義
-      const level = block.querySelector(".music_lv_block").textContent.trim() || "";
+      const level = block.querySelector(".music_lv_block")?.textContent.trim() || "";
       if (minLevelArgument === "isPlayed") {
         // else ifと対応付けるためだけのスコープなので空白
       } else if (minLevelList.indexOf(level) < minLevelList.indexOf(minLevelArgument)) {
@@ -126,7 +126,7 @@ function createMaimaiResultsByNet(targetElements, minLevelArgument, minRankArgum
 
       // 2-2. level, rank, apfc以外の残りの要素について抽出する
       // タイトルを抽出し、改行タグ等を変換し、余分な空白を削除し、(D✪N’T  ST✪P  R✪CKIN’対策)、両端のダブルクォーテーションをexcel,googleスプレッドシートでの文字列扱いにするために二重にする("411Ψ892"対策)
-      let title = block.querySelector(".music_name_block").textContent
+      let title = block.querySelector(".music_name_block")?.textContent
                     .trim()
                     .replace(/[\t\n]/g, "")
                     .replace(/ {2,}/g, " ")
@@ -191,7 +191,7 @@ function createMaimaiResultsByNet(targetElements, minLevelArgument, minRankArgum
     // 3. rowsをタブ区切り方式でクリップボードに貼り付ける
     const tsv = [headers, ...rows].map(row => row.join("\t")).join("\n");
     try {
-      navigator.clipboard.writeText(tsv);
+      await navigator.clipboard.writeText(tsv);
       const alertText = `${rows.length} 件の譜面データをクリップボードにコピーしました！\nExcelやGoogleスプレッドシートにそのまま貼り付けられます。`;
       console.log(`${funcName}: ${alertText}\nat ${Date.now()}`);
       alert(`${alertText}\n(実行時間: ${Date.now() - startTime}ms)`);
@@ -202,7 +202,7 @@ function createMaimaiResultsByNet(targetElements, minLevelArgument, minRankArgum
 
   } catch (e) {
     console.error(`${funcName}: ${e.message} at ${Date.now()}`);
-    alert(`エラーが発生しました。\n(理由: ${e.message}\n(実行時間: ${Date.now() - startTime}ms)`);
+    alert(`エラーが発生しました。\n(理由: ${e.message})\n(実行時間: ${Date.now() - startTime}ms)`);
     return {status: false, message: e.message, executionTime: Date.now() - startTime};
   }
 

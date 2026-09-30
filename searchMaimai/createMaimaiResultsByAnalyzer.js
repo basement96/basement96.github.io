@@ -5,7 +5,7 @@
  * @param {String} anlType - 抽出する方法 ('value': music_name_blockクラスのdiv要素内のvalue=を参照, 'span': 表示されている内容及び画像URLを参照, 'both': 両方を使用し、データを比較し、不一致は警告する(spanを優先する))
  * @returns {void} クリップボードに貼り付けをしてそのまま終了する
  */
-function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
+async function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
   const funcName = createMaimaiResultsByAnalyzer.name;
   const startTime = Date.now();
   console.log(`${funcName}実行開始 at ${startTime}`);
@@ -169,8 +169,8 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
             const rawRank = parts[10] ?? null;
             const rawDxStar = parts[11] ?? null;
 
-            difficulty = diffMap[rawDiff.toLowerCase()] || rawDiff.toUpperCase();
-            chartType = typeMap[rawType.toLowerCase()] || rawType.toUpperCase();
+            difficulty = rawDiff ? diffMap[rawDiff.toLowerCase()] || rawDiff.toUpperCase() : "";
+            chartType = rawType ? typeMap[rawType.toLowerCase()] || rawType.toUpperCase() : "";
             level = rawLevel ? rawLevel.replace("p", "+").replace("u", "?") : ""; // replace u はUTAGE用
             const scoreFormat = new Intl.NumberFormat('ja-JP', {
               style: 'percent',
@@ -466,7 +466,7 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
     // 3. クリップボードへのコピー実行
     const resultTsv = rows.join("\n");
     try {
-      navigator.clipboard.writeText(resultTsv);
+      await navigator.clipboard.writeText(resultTsv);
       let alertText = `${scoreBlocks.length} 件の譜面データをクリップボードにコピーしました！\nExcelやGoogleスプレッドシートにそのまま貼り付けられます。`;
       if (warnSheets.length !== 0) {
         alertText += `\n\n警告: 計 ${warnSheets.length} 要素の譜面データの情報が正確でない可能性があります。以下に示す譜面について、貼り付け後、maimaiDxNETや攻略wiki等で情報を再確認してください。\n${warnSheets.join('\n')}`;
@@ -480,7 +480,7 @@ function createMaimaiResultsByAnalyzer(outerHtml, filType, anlType) {
 
   } catch (e) {
     console.error(`${funcName}: ${e.message} at ${Date.now()}`);
-    alert(`エラーが発生しました。\n(理由: ${e.message}\n(実行時間: ${Date.now() - startTime}ms)`);
+    alert(`エラーが発生しました。\n(理由: ${e.message})\n(実行時間: ${Date.now() - startTime}ms)`);
     return {status: false, message: e.message, executionTime: Date.now() - startTime};
   }
 
