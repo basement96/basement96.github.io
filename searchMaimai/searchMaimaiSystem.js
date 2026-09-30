@@ -1,6 +1,6 @@
 (() => {
   const SCRIPT_VERSION = '0.3.1'; // Fixed several potential issues related to error handling.
-  const IS_DEVMODE = true;
+  const IS_DEVMODE = false;
 
   /**
    * ブックマークレット実行時に実行される非同期関数
